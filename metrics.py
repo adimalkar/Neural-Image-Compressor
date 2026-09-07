@@ -52,3 +52,67 @@ def calculate_compression_ratio(original_size_bytes: int, compressed_size_bytes:
         raise ValueError("Compressed size cannot be zero.")
         
     return round(original_size_bytes / compressed_size_bytes, 2)
+
+
+def calculate_bpp(compressed_size_bytes: int, width: int, height: int) -> float:
+    """
+    Calculate Bits Per Pixel (BPP), standard efficiency metric in image compression.
+    
+    Args:
+        compressed_size_bytes (int): Size of the compressed bitstream in bytes
+        width (int): Image width in pixels
+        height (int): Image height in pixels
+        
+    Returns:
+        float: BPP value representing bits consumed per pixel
+    """
+    num_pixels = width * height
+    if num_pixels <= 0:
+        raise ValueError("Image dimensions must be positive integers.")
+        
+    bpp = (compressed_size_bytes * 8.0) / num_pixels
+    return round(bpp, 4)
+
+
+def calculate_ssim(
+    original: np.ndarray, 
+    compressed: np.ndarray, 
+    k1: float = 0.01, 
+    k2: float = 0.03, 
+    max_val: float = 255.0
+) -> float:
+    """
+    Calculate Mean Structural Similarity Index Measure (SSIM) between two images.
+    Measures perceived image degradation by evaluating luminance, contrast, and structure.
+    
+    Args:
+        original (np.ndarray): Original image array
+        compressed (np.ndarray): Compressed/reconstructed image array
+        k1 (float): Small constant to stabilize division near zero luminance
+        k2 (float): Small constant to stabilize division near zero contrast
+        max_val (float): Dynamic range of pixel values (typically 255 for 8-bit)
+        
+    Returns:
+        float: SSIM index ranging from -1 to 1 (1 indicates perfect structural match)
+    """
+    if original.shape != compressed.shape:
+        raise ValueError("Input images must have the same shape for SSIM calculation.")
+        
+    orig = original.astype(np.float64)
+    comp = compressed.astype(np.float64)
+    
+    c1 = (k1 * max_val) ** 2
+    c2 = (k2 * max_val) ** 2
+    
+    mu_x = np.mean(orig)
+    mu_y = np.mean(comp)
+    
+    sigma_x_sq = np.var(orig)
+    sigma_y_sq = np.var(comp)
+    sigma_xy = np.cov(orig.flatten(), comp.flatten())[0, 1]
+    
+    numerator = (2.0 * mu_x * mu_y + c1) * (2.0 * sigma_xy + c2)
+    denominator = (mu_x ** 2 + mu_y ** 2 + c1) * (sigma_x_sq + sigma_y_sq + c2)
+    
+    ssim = numerator / denominator
+    return round(float(ssim), 4)
