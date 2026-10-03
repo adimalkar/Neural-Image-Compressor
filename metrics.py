@@ -116,3 +116,44 @@ def calculate_ssim(
     
     ssim = numerator / denominator
     return round(float(ssim), 4)
+
+
+def calculate_mae(original: np.ndarray, compressed: np.ndarray) -> float:
+    """
+    Calculate Mean Absolute Error (MAE / L1 loss) between original and reconstructed images.
+    Preserves sharper edges and texture detail compared to L2/MSE in perceptual neural codecs.
+    
+    Args:
+        original (np.ndarray): Original image array
+        compressed (np.ndarray): Reconstructed image array
+        
+    Returns:
+        float: MAE value representing average absolute pixel deviation
+    """
+    if original.shape != compressed.shape:
+        raise ValueError("Original and compressed images must have the same dimensions.")
+        
+    orig_float = original.astype(np.float64)
+    comp_float = compressed.astype(np.float64)
+    return round(float(np.mean(np.abs(orig_float - comp_float))), 4)
+
+
+def calculate_rate_distortion(bpp: float, distortion_mse: float, lambda_param: float = 0.01) -> float:
+    """
+    Calculate Rate-Distortion cost: J = D + lambda * R.
+    Standard optimization objective in learned neural image compression trade-offs.
+    
+    Args:
+        bpp (float): Rate in bits per pixel
+        distortion_mse (float): Distortion measured via Mean Squared Error (MSE)
+        lambda_param (float): Lagrange multiplier controlling rate vs quality trade-off
+        
+    Returns:
+        float: Combined Rate-Distortion objective value
+    """
+    if bpp < 0 or distortion_mse < 0:
+        raise ValueError("Rate (bpp) and distortion (MSE) must be non-negative.")
+        
+    cost = distortion_mse + (lambda_param * bpp)
+    return round(float(cost), 6)
+
